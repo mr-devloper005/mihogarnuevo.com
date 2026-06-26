@@ -53,17 +53,26 @@ export default async function HomePage() {
         }}
       />
       <EditableHomeHero primaryTask={primaryTask} primaryRoute={primaryRoute} posts={primaryPosts} timeSections={timeSections} />
-      <div className="mx-auto max-w-6xl px-4 py-6">
-  <Ads slot="header" showLabel eager className="mx-auto w-full" />
-</div>
 
       <EditableStoryRail primaryTask={primaryTask} primaryRoute={primaryRoute} posts={primaryPosts} timeSections={timeSections} />
       <EditableMagazineSplit primaryTask={primaryTask} primaryRoute={primaryRoute} posts={primaryPosts} timeSections={timeSections} />
 
+      {/* Mid-feed billboard (970×250) */}
+      <div className="border-t border-[var(--editable-border)]">
+        <div className="mx-auto flex w-full max-w-[var(--editable-container)] justify-center px-5 py-12 sm:px-6 lg:px-8">
+          <Ads slot="in-feed" showLabel eager className="w-full" />
+        </div>
+      </div>
+
       <EditableTimeCollections primaryTask={primaryTask} primaryRoute={primaryRoute} posts={primaryPosts} timeSections={timeSections} />
-      <div className="mx-auto max-w-6xl px-4 py-6">
-  <Ads slot="sidebar" showLabel eager className="mx-auto w-full" />
-</div>
+
+      {/* Bottom leaderboard (970×90) */}
+      <div className="border-t border-[var(--editable-border)]">
+        <div className="mx-auto flex w-full max-w-[var(--editable-container)] justify-center px-5 py-8 sm:px-6 lg:px-8">
+          <Ads slot="footer" showLabel className="w-full" />
+        </div>
+      </div>
+
       <EditableHomeCta />
       </main>
     </EditableSiteShell>

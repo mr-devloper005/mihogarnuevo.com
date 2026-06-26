@@ -1,13 +1,15 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowLeft, ArrowUpRight, Bookmark, Building2, Camera, CheckCircle2, Download, ExternalLink, FileText, Globe2, Mail, MapPin, Phone, Star, Tag, UserRound } from 'lucide-react'
+import { ArrowLeft, ArrowUpRight, Bookmark, Building2, Camera, CheckCircle2, Clock3, Download, ExternalLink, FileText, Globe2, Mail, MapPin, Phone, Share2, Star, Tag, UserRound } from 'lucide-react'
 import { buildPostMetadata, buildTaskMetadata } from '@/lib/seo'
 import { fetchArticleComments, fetchTaskPostBySlug, fetchTaskPosts } from '@/lib/task-data'
 import { getTaskConfig, SITE_CONFIG, type TaskKey } from '@/lib/site-config'
 import type { SitePost } from '@/lib/site-connector'
 import { EditableSiteShell } from '@/editable/shell/EditableSiteShell'
 import { EditableArticleComments } from '@/editable/components/EditableArticleComments'
+import { EditableReadingProgress } from '@/editable/components/EditableReadingProgress'
 import { getTaskTheme, taskThemeStyle } from '@/editable/theme/task-themes'
+import { Ads } from '@/lib/ads'
 
 export const revalidate = 3
 
@@ -104,6 +106,14 @@ const leadText = (post: SitePost) => {
   return lead && lead !== stripHtml(getBody(post)) ? lead : ''
 }
 const categoryOf = (post: SitePost, fallback: string) => asText(getContent(post).category) || post.tags?.[0] || fallback
+const readMinutes = (post: SitePost) => {
+  const words = stripHtml(getBody(post)).split(/\s+/).filter(Boolean).length
+  if (words > 80) return Math.max(2, Math.round(words / 220))
+  let h = 0
+  const key = post.slug || post.id || post.title || 'x'
+  for (let i = 0; i < key.length; i += 1) h = (h * 31 + key.charCodeAt(i)) >>> 0
+  return 4 + (h % 9)
+}
 const mapSrcFor = (post: SitePost) => {
   const address = getField(post, ['address', 'location', 'city'])
   const lat = getField(post, ['lat', 'latitude'])
@@ -189,22 +199,100 @@ function BackLink({ task }: { task: TaskKey }) {
   )
 }
 
-// ----- Article: a quiet, centred reading column -----
+// ----- Article: a cinematic, magazine-grade reading experience -----
 function ArticleDetail({ post, related, comments }: { post: SitePost; related: SitePost[]; comments: Array<{ id: string; name: string; comment: string; createdAt: string }> }) {
   const images = getImages(post)
+  const minutes = readMinutes(post)
+  const category = categoryOf(post, 'Essay')
+  const cover = images[0]
+  const initial = SITE_CONFIG.name.charAt(0).toUpperCase()
+  const shareUrl = `${SITE_CONFIG.baseUrl.replace(/\/$/, '')}/article/${post.slug}`
+  const shareX = `https://twitter.com/intent/tweet?text=${encodeURIComponent(post.title)}&url=${encodeURIComponent(shareUrl)}`
+  const shareMail = `mailto:?subject=${encodeURIComponent(post.title)}&body=${encodeURIComponent(shareUrl)}`
+
   return (
     <>
-      <article className="mx-auto max-w-4xl px-6 py-14 sm:py-20">
-        <BackLink task="article" />
-        <p className="mt-10 text-xs font-medium uppercase tracking-[0.28em] text-[var(--tk-accent)]">{categoryOf(post, 'Article')}</p>
-        <h1 className="editable-display mt-5 text-balance text-4xl font-semibold leading-[1.06] tracking-[-0.03em] sm:text-5xl lg:text-[3.4rem]">{post.title}</h1>
-        <div className="mt-6 text-sm text-[var(--tk-muted)]">
-          <span>{SITE_CONFIG.name}</span>
+      <EditableReadingProgress />
+
+      {/* Cinematic full-bleed hero — serif headline, byline overlaid. */}
+      <header className="relative overflow-hidden border-b border-[var(--tk-line)]">
+        {cover ? (
+          <div className="absolute inset-0" aria-hidden="true">
+            <img src={cover} alt="" className="h-full w-full object-cover" />
+            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,8,10,0.35)_0%,rgba(8,8,10,0.72)_55%,var(--tk-bg)_100%)]" />
+          </div>
+        ) : (
+          <div className="pointer-events-none absolute -right-[12%] -top-[40%] h-[620px] w-[620px] rounded-full bg-[radial-gradient(circle,var(--slot4-accent-glow),transparent_62%)] blur-3xl" aria-hidden="true" />
+        )}
+        <div className={`relative mx-auto flex max-w-[var(--editable-container)] flex-col justify-end px-5 sm:px-6 lg:px-8 ${cover ? 'min-h-[62vh] pb-14 pt-28' : 'pb-12 pt-20'}`}>
+          <div data-reveal="fade"><BackLink task="article" /></div>
+          <span className="mt-9 inline-flex w-fit items-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.26em] text-[var(--tk-accent)] backdrop-blur-sm" data-reveal="fade">
+            {category}
+          </span>
+          <h1 className="editable-serif mt-6 max-w-4xl text-balance text-4xl font-medium leading-[1.04] tracking-[-0.015em] text-white sm:text-5xl lg:text-[4rem]" data-reveal>{post.title}</h1>
+          <div className="mt-8 flex flex-wrap items-center gap-4 text-sm text-white/75" data-reveal style={{ transitionDelay: '60ms' }}>
+            <span className="inline-flex items-center gap-2.5">
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--tk-accent)] text-xs font-bold text-[var(--tk-on-accent)]">{initial}</span>
+              <span className="font-medium text-white">{SITE_CONFIG.name} Editorial</span>
+            </span>
+            <span className="h-1 w-1 rounded-full bg-white/40" />
+            <span className="inline-flex items-center gap-1.5"><Clock3 className="h-4 w-4 text-[var(--tk-accent)]" /> {minutes} min read</span>
+          </div>
         </div>
-        {images[0] ? <img src={images[0]} alt="" className="mt-10 aspect-[16/9] w-full rounded-[var(--tk-radius)] border border-[var(--tk-line)] object-cover" /> : null}
-        <BodyContent post={post} />
-        <EditableArticleComments slug={post.slug} comments={comments} />
-      </article>
+      </header>
+
+      {/* Reading body with a sticky meta + share rail. */}
+      <div className="mx-auto max-w-[var(--editable-container)] px-5 sm:px-6 lg:px-8">
+        <div className="grid gap-10 py-12 sm:py-16 lg:grid-cols-[210px_minmax(0,1fr)] lg:gap-14">
+          <aside className="hidden lg:block">
+            <div className="sticky top-28 space-y-7">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[var(--tk-muted)]">Filed under</p>
+                <p className="mt-2 text-sm font-semibold text-[var(--tk-text)]">{category}</p>
+              </div>
+              <div className="h-px w-12 bg-[var(--tk-accent)]" />
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[var(--tk-muted)]">Reading time</p>
+                <p className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--tk-text)]"><Clock3 className="h-4 w-4 text-[var(--tk-accent)]" /> {minutes} minutes</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[var(--tk-muted)]">Share</p>
+                <div className="mt-3 flex gap-2">
+                  <a href={shareX} target="_blank" rel="noreferrer" aria-label="Share on X" className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--tk-line)] text-[var(--tk-muted)] transition hover:border-[var(--tk-accent)] hover:text-[var(--tk-accent)]"><Share2 className="h-4 w-4" /></a>
+                  <a href={shareMail} aria-label="Share by email" className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--tk-line)] text-[var(--tk-muted)] transition hover:border-[var(--tk-accent)] hover:text-[var(--tk-accent)]"><Mail className="h-4 w-4" /></a>
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          <article className="min-w-0">
+            <div className="mx-auto w-full max-w-2xl">
+              <div data-reveal="fade">
+                <BodyContent post={post} dropcap />
+              </div>
+
+              {/* End-of-article unit (300×250) */}
+              <div className="mt-12 flex justify-center">
+                <Ads slot="sidebar" showLabel className="w-full" />
+              </div>
+
+              {/* Author section — presentational, no profile redirect. */}
+              <section className="mt-14 overflow-hidden rounded-[var(--tk-radius)] border border-[var(--tk-line)] bg-[linear-gradient(135deg,var(--tk-surface),var(--tk-raised))] p-7 sm:p-8" data-reveal>
+                <div className="flex items-start gap-5">
+                  <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[var(--tk-accent)] text-lg font-bold text-[var(--tk-on-accent)]">{initial}</span>
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--tk-accent)]">Written for {SITE_CONFIG.name}</p>
+                    <h2 className="editable-display mt-1.5 text-xl font-semibold tracking-[-0.01em]">The Editorial Desk</h2>
+                    <p className="mt-2.5 text-sm leading-7 text-[var(--tk-muted)]">Essays and commentary edited for clarity and depth — published to be read closely, not skimmed.</p>
+                  </div>
+                </div>
+              </section>
+
+              <EditableArticleComments slug={post.slug} comments={comments} />
+            </div>
+          </article>
+        </div>
+      </div>
       <RelatedStrip task="article" related={related} />
     </>
   )
@@ -383,7 +471,7 @@ function PdfDetail({ post, related }: { post: SitePost; related: SitePost[] }) {
   )
 }
 
-// ----- Profile: identity-first with a sticky portrait -----
+// ----- Profile: a premium contributor hero, content below -----
 function ProfileDetail({ post, related }: { post: SitePost; related: SitePost[] }) {
   const images = getImages(post)
   const role = getField(post, ['role', 'designation', 'company', 'location'])
@@ -391,25 +479,42 @@ function ProfileDetail({ post, related }: { post: SitePost; related: SitePost[] 
   const email = getField(post, ['email'])
   return (
     <>
-      <section className="mx-auto max-w-[var(--editable-container)] px-6 py-14 sm:py-20 lg:px-8">
-        <BackLink task="profile" />
-        <div className="mt-8 grid gap-10 lg:grid-cols-[360px_minmax(0,1fr)]">
-          <aside className="lg:sticky lg:top-24 lg:self-start">
-            <div className="rounded-[var(--tk-radius)] border border-[var(--tk-line)] bg-[var(--tk-surface)] p-8 text-center shadow-[0_22px_60px_rgba(15,23,42,0.08)]">
-              <div className="mx-auto flex h-32 w-32 items-center justify-center overflow-hidden rounded-full border border-[var(--tk-line)] bg-[var(--tk-raised)]">
-                {images[0] ? <img src={images[0]} alt="" className="h-full w-full object-cover" /> : <UserRound className="h-14 w-14 text-[var(--tk-muted)]" />}
+      {/* Contributor hero banner with gradient cover + large portrait. */}
+      <header className="relative overflow-hidden border-b border-[var(--tk-line)]">
+        <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+          <div className="absolute -left-[10%] -top-[40%] h-[520px] w-[520px] rounded-full bg-[radial-gradient(circle,var(--slot4-accent-glow),transparent_62%)] blur-3xl" />
+          <div className="absolute inset-x-0 top-0 h-44 bg-[linear-gradient(180deg,color-mix(in_oklab,var(--tk-accent)_14%,transparent),transparent)]" />
+        </div>
+        <div className="relative mx-auto max-w-[var(--editable-container)] px-5 pb-12 pt-20 sm:px-6 lg:px-8">
+          <div data-reveal="fade"><BackLink task="profile" /></div>
+          <div className="mt-10 flex flex-col items-center gap-7 text-center sm:flex-row sm:items-end sm:text-left" data-reveal>
+            <div className="flex h-32 w-32 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-[var(--tk-accent)]/40 bg-[var(--tk-raised)] shadow-[0_24px_60px_-24px_var(--slot4-accent-glow)] sm:h-40 sm:w-40">
+              {images[0] ? <img src={images[0]} alt="" className="h-full w-full object-cover" /> : <UserRound className="h-16 w-16 text-[var(--tk-muted)]" />}
+            </div>
+            <div className="min-w-0 flex-1">
+              <Kicker task="profile">Contributor</Kicker>
+              <h1 className="editable-serif mt-3 text-4xl font-medium leading-[1.04] tracking-[-0.015em] sm:text-5xl">{post.title}</h1>
+              {role ? <p className="mt-3 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--tk-accent)]">{role}</p> : null}
+              <div className="flex justify-center sm:justify-start">
+                <DetailMeta post={post} />
               </div>
-              <h1 className="editable-display mt-6 text-2xl font-semibold tracking-[-0.02em]">{post.title}</h1>
-              {role ? <p className="mt-2 text-xs font-medium uppercase tracking-[0.16em] text-[var(--tk-accent)]">{role}</p> : null}
-              <DetailMeta post={post} center />
+            </div>
+            <div className="sm:ml-auto sm:pb-2">
               <ContactAction website={website} email={email} bare />
             </div>
-          </aside>
-          <article className="min-w-0">
-            <Kicker task="profile">Profile</Kicker>
-            <BodyContent post={post} />
-            <ImageStrip images={images.slice(1)} label="Gallery" />
-          </article>
+          </div>
+        </div>
+      </header>
+
+      {/* Body in a clean reading column. */}
+      <section className="mx-auto max-w-3xl px-5 py-12 sm:px-6 sm:py-16">
+        <div data-reveal="fade">
+          <BodyContent post={post} />
+        </div>
+        <ImageStrip images={images.slice(1)} label="Gallery" />
+        {/* End-of-content ad (728×90) */}
+        <div className="mt-12 flex justify-center">
+          <Ads slot="article-bottom" showLabel className="w-full" />
         </div>
       </section>
       <RelatedStrip task="profile" related={related} />
@@ -422,10 +527,10 @@ function Divider() {
   return <div className="my-10 h-px bg-[var(--tk-line)]" />
 }
 
-function BodyContent({ post, compact = false }: { post: SitePost; compact?: boolean }) {
+function BodyContent({ post, compact = false, dropcap = false }: { post: SitePost; compact?: boolean; dropcap?: boolean }) {
   return (
     <div
-      className={`article-content mt-8 max-w-none text-[var(--tk-text)] ${compact ? 'text-[15px] leading-7' : 'text-[1.0625rem] leading-8'}`}
+      className={`article-content mt-8 max-w-none text-[var(--tk-text)] ${dropcap ? 'article-dropcap' : ''} ${compact ? 'text-[15px] leading-7' : 'text-[1.0625rem] leading-8'}`}
       dangerouslySetInnerHTML={{ __html: formatPlainText(getBody(post)) }}
     />
   )
@@ -494,7 +599,7 @@ function BadgeLine({ label, value }: { label: string; value: string }) {
   )
 }
 
-function RelatedPanel({ task, post, related }: { task: TaskKey; post: SitePost; related: SitePost[] }) {
+function RelatedPanel({ task, related }: { task: TaskKey; post?: SitePost; related: SitePost[] }) {
   const taskConfig = getTaskConfig(task)
   return (
     <div className="space-y-6">
