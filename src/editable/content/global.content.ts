@@ -3,52 +3,61 @@ import { slot4BrandConfig } from '@/editable/theme/brand.config'
 export const globalContent = {
   site: {
     name: slot4BrandConfig.siteName,
-    tagline: slot4BrandConfig.tagline || 'Independent reading platform',
+    tagline: slot4BrandConfig.tagline || 'Independent publishing platform',
     domain: slot4BrandConfig.domain,
     baseUrl: slot4BrandConfig.baseUrl,
   },
   nav: {
-    tagline: 'Independent reading platform',
+    tagline: 'Ideas, essays & expert voices',
+    // Public navigation only — no profile or article-archive entries.
     primaryLinks: [
-      { label: 'Articles', href: '/articles' },
-      { label: 'Visuals', href: '/image-sharing' },
-      { label: 'Listings', href: '/listings' },
+      { label: 'Home', href: '/' },
+      { label: 'About', href: '/about' },
+      { label: 'Search', href: '/search' },
       { label: 'Contact', href: '/contact' },
     ],
     actions: {
-      primary: { label: 'Start exploring', href: '/' },
-      secondary: { label: 'Submit', href: '/contact' },
+      primary: { label: 'Start reading', href: '/' },
+      secondary: { label: 'Contact', href: '/contact' },
     },
   },
   footer: {
-    tagline: 'Stories, resources, and discoverable posts',
-    description: 'A connected publishing surface for articles, visuals, listings, profiles, bookmarks, and downloadable resources.',
+    tagline: 'Where ideas find their readers',    
+    description:
+      'A dedicated platform for in-depth essays, expert insights, and worthwhile ideas. Here, we prioritize thoughtful reading and deep exploration over speed and superficial engagement. Let\'s discover together.',
+    // Curated public columns only — no profile or article-archive navigation links.
     columns: [
       {
         title: 'Explore',
         links: [
-          { label: 'Articles', href: '/articles' },
-          { label: 'Listings', href: '/listings' },
-          { label: 'Images', href: '/image-sharing' },
-          { label: 'PDF Library', href: '/pdf' },
+          { label: 'Home', href: '/' },
+          { label: 'Search the archive', href: '/search' },
+          { label: 'About the platform', href: '/about' },
         ],
       },
       {
-        title: 'Site',
+        title: 'Connect',
         links: [
-          { label: 'About', href: '/about' },
-          { label: 'Contact', href: '/contact' },
+          { label: 'Contact the desk', href: '/contact' },
+          { label: 'Member sign in', href: '/login' },
+          { label: 'Create an account', href: '/signup' },
         ],
       },
     ],
-    bottomNote: 'Built for clean discovery and connected publishing.',
+    newsletter: {
+      title: 'The weekly dispatch',
+      description: 'A short edit of our best new essays and ideas, delivered once a week. No noise.',
+      placeholder: 'you@example.com',
+      cta: 'Subscribe',
+    },
+    bottomNote: 'Crafted for considered reading and thoughtful discovery.',
   },
   commonLabels: {
-    readMore: 'Read more',
+    readMore: 'Read the essay',
     viewAll: 'View all',
     explore: 'Explore',
     latest: 'Latest',
-    related: 'Related',
+    related: 'Keep reading',
     published: 'Published',
   },
 } as const

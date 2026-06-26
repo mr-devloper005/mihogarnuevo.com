@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ArrowUpRight, BriefcaseBusiness, ChevronDown, Download, FileText, Globe, MapPin, Phone, Search, Star, UserRound } from 'lucide-react'
+import { ArrowUpRight, BriefcaseBusiness, ChevronDown, Clock3, Download, FileText, Globe, MapPin, Phone, Search, Star, UserRound } from 'lucide-react'
 import { buildTaskMetadata } from '@/lib/seo'
 import { CATEGORY_OPTIONS, normalizeCategory } from '@/lib/categories'
 import { fetchPaginatedTaskPosts, buildPostUrl } from '@/lib/task-data'
@@ -9,6 +9,7 @@ import { taskPageMetadata } from '@/config/site.content'
 import { taskPageVoices } from '@/editable/content/task-pages.content'
 import { EditableSiteShell } from '@/editable/shell/EditableSiteShell'
 import { getTaskTheme, taskThemeStyle } from '@/editable/theme/task-themes'
+import { Ads } from '@/lib/ads'
 
 export const revalidate = 3
 
@@ -46,6 +47,17 @@ const getField = (post: SitePost, keys: string[]) => {
   return ''
 }
 const cleanDomain = (value: string) => value.replace(/^https?:\/\//, '').replace(/\/$/, '')
+
+const readMinutes = (post: SitePost) => {
+  const content = getContent(post)
+  const body = ['body', 'description', 'summary'].map((k) => asText(content[k])).concat(post.summary || '').join(' ')
+  const words = body.replace(/<[^>]*>/g, ' ').split(/\s+/).filter(Boolean).length
+  if (words > 80) return Math.max(2, Math.round(words / 220))
+  let h = 0
+  const key = post.slug || post.id || post.title || 'x'
+  for (let i = 0; i < key.length; i += 1) h = (h * 31 + key.charCodeAt(i)) >>> 0
+  return 4 + (h % 9)
+}
 
 function pageHref(basePath: string, category: string, page: number) {
   const params = new URLSearchParams()
@@ -91,64 +103,97 @@ export function TaskArchiveView({ task, posts, pagination, category, basePath }:
   const theme = getTaskTheme(task)
   const page = pagination.page || 1
   const label = taskConfig?.label || task
-  const categoryLabel = category === 'all' ? 'All categories' : CATEGORY_OPTIONS.find((item) => item.slug === category)?.name || category
+  const categoryLabel = category === 'all' ? 'All topics' : CATEGORY_OPTIONS.find((item) => item.slug === category)?.name || category
+  // Feature the lead post on page 1 of the editorial (article) archive.
+  const showFeature = task === 'article' && page === 1 && category === 'all' && posts.length > 2
+  const feature = showFeature ? posts[0] : null
+  const gridPosts = feature ? posts.slice(1) : posts
+  const topicChips = CATEGORY_OPTIONS.slice(0, 8)
 
   return (
     <EditableSiteShell>
       <main style={taskThemeStyle(task)} className="min-h-screen bg-[var(--tk-bg)] text-[var(--tk-text)]">
         <header className="relative overflow-hidden border-b border-[var(--tk-line)]">
-          <div className="pointer-events-none absolute inset-x-0 -top-40 h-96 bg-[radial-gradient(60%_60%_at_50%_0%,var(--tk-glow),transparent_70%)]" />
-          <div className="relative mx-auto max-w-[var(--editable-container)] px-6 py-20 sm:py-28 lg:px-8">
-            <div className="flex items-center gap-3 text-[11px] font-medium uppercase tracking-[0.34em] text-[var(--tk-accent)]">
+          <div className="pointer-events-none absolute -right-[12%] -top-[30%] h-[620px] w-[620px] rounded-full bg-[radial-gradient(circle,var(--slot4-accent-glow),transparent_62%)] blur-3xl" />
+          <div className="relative mx-auto max-w-[var(--editable-container)] px-5 py-20 sm:px-6 sm:py-24 lg:px-8">
+            <div className="flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.32em] text-[var(--tk-accent)]" data-reveal="fade">
               <span>{theme.kicker}</span>
-              <span className="h-1 w-1 rounded-full bg-[var(--tk-accent)] opacity-50" />
+              <span className="h-1 w-1 rounded-full bg-[var(--tk-accent)] opacity-60" />
               <span className="text-[var(--tk-muted)]">{label}</span>
             </div>
-            <h1 className="editable-display mt-6 max-w-3xl text-balance text-[2.5rem] font-semibold leading-[1.06] tracking-[-0.03em] sm:text-5xl lg:text-6xl">
+            <h1 className="editable-display mt-6 max-w-3xl text-balance text-[2.6rem] font-semibold leading-[1.04] tracking-[-0.03em] sm:text-5xl lg:text-6xl" data-reveal>
               {voice?.headline || `Browse ${label}`}
             </h1>
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-[var(--tk-muted)]">{voice?.description || theme.note}</p>
-            {voice?.chips?.length ? (
-              <div className="mt-8 flex flex-wrap gap-2.5">
-                {voice.chips.map((chip) => (
-                  <span key={chip} className="rounded-full border border-[var(--tk-line)] bg-[var(--tk-surface)] px-3.5 py-1.5 text-xs font-medium text-[var(--tk-muted)]">{chip}</span>
+            <p className="mt-6 max-w-2xl text-lg leading-8 text-[var(--tk-muted)]" data-reveal style={{ transitionDelay: '80ms' }}>
+              {voice?.description || theme.note}
+            </p>
+
+            <div className="mt-10 flex flex-col gap-5 border-t border-[var(--tk-line)] pt-7 lg:flex-row lg:items-center lg:justify-between" data-reveal style={{ transitionDelay: '140ms' }}>
+              <div className="flex flex-wrap items-center gap-2">
+                <Link
+                  href={basePath}
+                  className={`rounded-full border px-4 py-1.5 text-xs font-semibold transition ${category === 'all' ? 'border-[var(--tk-accent)] bg-[var(--tk-accent)] text-[var(--tk-on-accent)]' : 'border-[var(--tk-line)] text-[var(--tk-muted)] hover:border-[var(--tk-accent)]/50 hover:text-[var(--tk-text)]'}`}
+                >
+                  All
+                </Link>
+                {topicChips.map((chip) => (
+                  <Link
+                    key={chip.slug}
+                    href={`${basePath}?category=${chip.slug}`}
+                    className={`rounded-full border px-4 py-1.5 text-xs font-semibold transition ${category === chip.slug ? 'border-[var(--tk-accent)] bg-[var(--tk-accent)] text-[var(--tk-on-accent)]' : 'border-[var(--tk-line)] text-[var(--tk-muted)] hover:border-[var(--tk-accent)]/50 hover:text-[var(--tk-text)]'}`}
+                  >
+                    {chip.name}
+                  </Link>
                 ))}
               </div>
-            ) : null}
-
-            <div className="mt-12 flex flex-col gap-4 border-t border-[var(--tk-line)] pt-6 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm text-[var(--tk-muted)]">
-                <span className="font-semibold text-[var(--tk-text)]">{posts.length}</span> {posts.length === 1 ? 'post' : 'posts'} · {categoryLabel}
-              </p>
-              <form action={basePath} className="flex items-center gap-2.5">
+              <form action={basePath} className="flex shrink-0 items-center gap-2.5">
                 <div className="relative">
                   <select
                     name="category"
                     defaultValue={category}
                     className="h-11 appearance-none rounded-full border border-[var(--tk-line)] bg-[var(--tk-surface)] pl-4 pr-10 text-sm font-medium text-[var(--tk-text)] outline-none transition focus:border-[var(--tk-accent)]"
-                    aria-label={voice?.filterLabel || 'Filter category'}
+                    aria-label={voice?.filterLabel || 'Filter topic'}
                   >
-                    <option value="all">All categories</option>
+                    <option value="all">All topics</option>
                     {CATEGORY_OPTIONS.map((item) => <option key={item.slug} value={item.slug}>{item.name}</option>)}
                   </select>
                   <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--tk-muted)]" />
                 </div>
-                <button className="inline-flex h-11 items-center rounded-full bg-[var(--tk-accent)] px-5 text-sm font-semibold text-[var(--tk-on-accent)] transition hover:opacity-90">Apply</button>
+                <button className="inline-flex h-11 items-center rounded-full bg-[var(--tk-accent)] px-5 text-sm font-semibold text-[var(--tk-on-accent)] transition hover:brightness-110">Apply</button>
               </form>
             </div>
+            <p className="mt-5 text-sm text-[var(--tk-muted)]">
+              <span className="font-semibold text-[var(--tk-text)]">{posts.length}</span> {posts.length === 1 ? 'essay' : 'essays'} · {categoryLabel}
+            </p>
           </div>
         </header>
 
-        <section className="mx-auto max-w-[var(--editable-container)] px-6 py-16 sm:py-20 lg:px-8">
-          {posts.length ? (
+        {task === 'article' ? (
+          <div className="mx-auto flex w-full max-w-[var(--editable-container)] justify-center px-5 pt-12 sm:px-6 lg:px-8">
+            <Ads slot="header" showLabel eager className="w-full" />
+          </div>
+        ) : null}
+
+        {feature ? (
+          <section className="mx-auto max-w-[var(--editable-container)] px-5 pt-14 sm:px-6 lg:px-8" data-reveal="zoom">
+            <FeatureArchiveBanner post={feature} href={`${basePath}/${feature.slug}`} />
+          </section>
+        ) : null}
+
+        <section className="mx-auto max-w-[var(--editable-container)] px-5 py-14 sm:px-6 sm:py-16 lg:px-8">
+          {gridPosts.length ? (
             <div className={taskGrid[task]}>
-              {posts.map((post, index) => <ArchivePostCard key={post.id || post.slug} post={post} task={task} basePath={basePath} index={index} />)}
+              {gridPosts.map((post, index) => (
+                <div key={post.id || post.slug} data-reveal style={{ transitionDelay: `${(index % 3) * 80}ms` }}>
+                  <ArchivePostCard post={post} task={task} basePath={basePath} index={index} />
+                </div>
+              ))}
             </div>
-          ) : (
+          ) : posts.length ? null : (
             <div className="mx-auto max-w-xl rounded-[var(--tk-radius)] border border-dashed border-[var(--tk-line)] bg-[var(--tk-surface)] px-8 py-16 text-center">
               <Search className="mx-auto h-7 w-7 text-[var(--tk-muted)]" />
               <h2 className="editable-display mt-5 text-2xl font-semibold tracking-[-0.02em]">Nothing here yet</h2>
-              <p className="mt-2 text-sm leading-6 text-[var(--tk-muted)]">Try another category, or check back after new {label.toLowerCase()} are published.</p>
+              <p className="mt-2 text-sm leading-6 text-[var(--tk-muted)]">Try another topic, or check back after new {label.toLowerCase()} are published.</p>
             </div>
           )}
 
@@ -162,6 +207,36 @@ export function TaskArchiveView({ task, posts, pagination, category, basePath }:
         </section>
       </main>
     </EditableSiteShell>
+  )
+}
+
+function FeatureArchiveBanner({ post, href }: { post: SitePost; href: string }) {
+  const image = getImage(post)
+  const category = getCategory(post, 'Featured')
+  return (
+    <Link
+      href={href}
+      className="group relative grid overflow-hidden rounded-[var(--tk-radius)] border border-[var(--tk-line)] bg-[var(--tk-surface)] transition duration-500 hover:border-[var(--slot4-accent)]/40 lg:grid-cols-2"
+    >
+      <div className="relative aspect-[16/10] overflow-hidden bg-[var(--tk-raised)] lg:aspect-auto lg:min-h-[420px]">
+        <img src={image} alt="" className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105" />
+      </div>
+      <div className="flex flex-col justify-center p-8 sm:p-12">
+        <div className="flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--tk-accent)]">
+          <span>Editor&rsquo;s pick</span>
+          <span className="h-1 w-1 rounded-full bg-[var(--tk-accent)]/50" />
+          <span className="text-[var(--tk-muted)]">{category}</span>
+        </div>
+        <h2 className="editable-display mt-5 text-3xl font-semibold leading-[1.08] tracking-[-0.025em] sm:text-4xl lg:text-5xl">{post.title}</h2>
+        <p className="mt-5 line-clamp-3 max-w-xl text-base leading-7 text-[var(--tk-muted)]">{getSummary(post)}</p>
+        <div className="mt-7 flex items-center gap-4 text-xs font-medium uppercase tracking-[0.16em] text-[var(--tk-muted)]">
+          <span className="inline-flex items-center gap-1.5"><Clock3 className="h-3.5 w-3.5 text-[var(--tk-accent)]" /> {readMinutes(post)} min read</span>
+        </div>
+        <span className="mt-7 inline-flex w-fit items-center gap-2 rounded-full bg-[var(--tk-accent)] px-5 py-2.5 text-sm font-semibold text-[var(--tk-on-accent)] transition group-hover:gap-3">
+          Read the essay <ArrowUpRight className="h-4 w-4" />
+        </span>
+      </div>
+    </Link>
   )
 }
 
@@ -219,23 +294,23 @@ function RatingLine({ post, center = false }: { post: SitePost; center?: boolean
   )
 }
 
-function ArticleArchiveCard({ post, href, index }: { post: SitePost; href: string; index: number }) {
+function ArticleArchiveCard({ post, href }: { post: SitePost; href: string; index: number }) {
   const image = getImage(post)
-  const category = getCategory(post, 'Article')
+  const category = getCategory(post, 'Essay')
   return (
     <Link href={href} className={`${cardBase} overflow-hidden`}>
       <div className="aspect-[16/10] overflow-hidden bg-[var(--tk-raised)]">
-        <img src={image} alt="" className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.03]" />
+        <img src={image} alt="" className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]" />
       </div>
       <div className="p-6 sm:p-7">
-        <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.22em] text-[var(--tk-accent)]">
+        <div className="flex items-center gap-2.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--tk-accent)]">
           <span>{category}</span>
-          <span className="text-[var(--tk-muted)]">· No. {String(index + 1).padStart(2, '0')}</span>
+          <span className="h-1 w-1 rounded-full bg-[var(--tk-accent)]/50" />
+          <span className="inline-flex items-center gap-1 text-[var(--tk-muted)]"><Clock3 className="h-3 w-3" /> {readMinutes(post)} min</span>
         </div>
-        <h2 className="editable-display mt-3 text-2xl font-semibold leading-snug tracking-[-0.02em]">{post.title}</h2>
-        <RatingLine post={post} />
-        <p className="mt-3 line-clamp-2 text-[15px] leading-7 text-[var(--tk-muted)]">{getSummary(post)}</p>
-        <CardArrow label="Read article" />
+        <h2 className="editable-display mt-3.5 line-clamp-2 text-2xl font-semibold leading-snug tracking-[-0.02em]">{post.title}</h2>
+        <p className="mt-3 line-clamp-3 text-[15px] leading-7 text-[var(--tk-muted)]">{getSummary(post)}</p>
+        <CardArrow label="Read the essay" />
       </div>
     </Link>
   )
@@ -346,7 +421,6 @@ function ProfileArchiveCard({ post, href }: { post: SitePost; href: string }) {
       </div>
       <h2 className="editable-display mt-5 text-lg font-semibold tracking-[-0.02em]">{post.title}</h2>
       {role ? <p className="mt-1.5 text-xs font-medium uppercase tracking-[0.16em] text-[var(--tk-accent)]">{role}</p> : null}
-      <RatingLine post={post} center />
       <p className="mt-3 line-clamp-2 text-sm leading-6 text-[var(--tk-muted)]">{getSummary(post)}</p>
     </Link>
   )

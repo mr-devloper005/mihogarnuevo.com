@@ -11,12 +11,12 @@ export type TaskPageVoice = {
 
 export const taskPageVoices = {
   article: {
-    eyebrow: 'Reading desk',
-    headline: 'Long-form articles with a calmer editorial rhythm.',
-    description: 'Use this page for essays, guides, explainers, and story-led posts. The layout should feel like a publication, not a directory.',
-    filterLabel: 'Choose article topic',
-    secondaryNote: 'Reading surfaces need space, hierarchy, and fewer distractions.',
-    chips: ['Editorial pacing', 'Topic filters', 'Long-read friendly'],
+    eyebrow: 'The reading room',
+    headline: 'Essays and ideas, given room to breathe.',
+    description: 'Long-form essays, sharp commentary, and original thinking from independent writers — edited for clarity and built for the long read.',
+    filterLabel: 'Choose a topic',
+    secondaryNote: 'Reading deserves space, hierarchy, and a single quiet column.',
+    chips: ['Long-form essays', 'Expert voices', 'Curated topics'],
   },
   classified: {
     eyebrow: 'Notice board',
@@ -35,12 +35,12 @@ export const taskPageVoices = {
     chips: ['Collections', 'Resources', 'Reference flow'],
   },
   profile: {
-    eyebrow: 'People and profiles',
-    headline: 'Profiles with identity, trust, and reputation cues.',
-    description: 'Profile pages should make people, brands, and entities feel discoverable rather than buried in a generic feed.',
-    filterLabel: 'Filter profile category',
-    secondaryNote: 'Make identity and credibility visible before the grid begins.',
-    chips: ['Identity first', 'Trust cues', 'Creator/business cards'],
+    eyebrow: 'Contributors',
+    headline: 'The writers and voices behind the work.',
+    description: 'The people who contribute essays and ideas to the platform.',
+    filterLabel: 'Filter contributors',
+    secondaryNote: 'Identity and credibility, shown with restraint.',
+    chips: ['Writers', 'Editors', 'Voices'],
   },
   pdf: {
     eyebrow: 'Document library',

@@ -1,56 +1,53 @@
 /*
-  Editable global theme layer.
+  Editable global theme layer (premium dark editorial / publishing platform).
 
   Safe for UI editors / AI tools:
-  - Full site background
-  - Global text color
+  - Full site background + global text color
   - Editable-only typography
-  - Selection color
-  - Scrollbar feel
-  - Article body typography accents
+  - Selection color + scrollbar feel
+  - Scroll-reveal motion system ([data-reveal])
+  - Reading progress bar styling
+  - Article body typography for long-form reading
 
   Do not add data fetching, scripts, or route logic here.
 */
 
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
-
-/* Per-task display + body typefaces (consumed via task-themes.ts). */
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Space+Grotesk:wght@400;500;600;700&family=Sora:wght@400;500;600;700;800&family=Syne:wght@500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Syne:wght@500;600;700;800&family=Sora:wght@400;500;600;700&display=swap');
 
 body {
   background-color: var(--slot4-page-bg) !important;
   color: var(--slot4-page-text) !important;
   background-image: var(--slot4-body-gradient) !important;
+  background-attachment: fixed !important;
 }
 
 .editable-site-root {
-  /* Yelp-style clean sans, used for both display and body. */
-  --editable-font-display: 'Inter', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  /* Clean geometric grotesk for display, Inter for body, Fraunces for accents. */
+  --editable-font-display: 'Space Grotesk', 'Syne', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
   --editable-font-body: 'Inter', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  --editable-font-serif: 'Fraunces', Georgia, 'Times New Roman', serif;
   /* Premium easing curve used across every hover + transition. */
   --ease-premium: cubic-bezier(0.22, 1, 0.36, 1);
   font-family: var(--editable-font-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-/*
-  Site-wide premium motion.
-
-  1. Unify the easing of every existing transition/hover to one refined curve.
-  2. Add a smooth "post open" entry animation that replays on each navigation
-     (driven by EditablePageMotion remounting the content per route).
-  Durations stay defined per-component via Tailwind utilities.
-*/
+/* Unify the easing of every existing transition/hover onto one refined curve. */
 .editable-site-root *,
 .editable-site-root *::before,
 .editable-site-root *::after {
   transition-timing-function: var(--ease-premium);
 }
 
+/* ---------------------------------------------------------------------------
+   Page-open entrance (replays per navigation via EditablePageMotion remount)
+--------------------------------------------------------------------------- */
 @keyframes editable-enter {
   from {
     opacity: 0;
-    transform: translate3d(0, 22px, 0);
+    transform: translate3d(0, 18px, 0);
   }
   to {
     opacity: 1;
@@ -58,16 +55,96 @@ body {
   }
 }
 
-/* The content region rises + fades on open; `backwards` clears the transform
-   afterwards so sticky sidebars keep working. */
 .editable-enter > * {
   animation: editable-enter 0.6s var(--ease-premium) backwards;
   will-change: transform, opacity;
 }
 
+/* ---------------------------------------------------------------------------
+   Scroll-reveal motion system.
+   Server components opt in with `data-reveal` (+ optional variant value).
+   EditablePageMotion adds `.reveal-enabled` to its wrapper after mount, then
+   reveals each target with `.is-visible`. CRUCIAL: the hidden state is gated
+   behind `.reveal-enabled`, so if JS never runs (or hydration is interrupted)
+   the content stays fully visible — the animation is a pure enhancement,
+   never a requirement for content to appear.
+   Stagger with inline `style={{ transitionDelay: '120ms' }}`.
+--------------------------------------------------------------------------- */
+.reveal-enabled [data-reveal] {
+  opacity: 0;
+  transform: translate3d(0, 32px, 0);
+  transition: opacity 0.8s var(--ease-premium), transform 0.8s var(--ease-premium);
+  will-change: opacity, transform;
+}
+.reveal-enabled [data-reveal='fade'] {
+  transform: none;
+}
+.reveal-enabled [data-reveal='left'] {
+  transform: translate3d(-42px, 0, 0);
+}
+.reveal-enabled [data-reveal='right'] {
+  transform: translate3d(42px, 0, 0);
+}
+.reveal-enabled [data-reveal='zoom'] {
+  transform: scale(0.94);
+}
+.reveal-enabled [data-reveal].is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* Hero sequential text reveal (runs on mount, no observer needed). */
+@keyframes editable-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 26px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.editable-rise {
+  animation: editable-rise 0.85s var(--ease-premium) backwards;
+}
+
+/* Slow ambient drift for hero glow / parallax accents. */
+@keyframes editable-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(0, -3%, 0) scale(1.05);
+  }
+}
+.editable-drift {
+  animation: editable-drift 16s ease-in-out infinite;
+}
+
+/* Reading progress bar (article detail). */
+.editable-reading-progress {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 3px;
+  transform-origin: 0 50%;
+  transform: scaleX(var(--read, 0));
+  background: linear-gradient(90deg, var(--slot4-accent), #ffb38a);
+  z-index: 60;
+  box-shadow: 0 0 18px var(--slot4-accent-glow);
+  transition: transform 0.1s linear;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .editable-enter > * {
-    animation: none;
+  .editable-enter > *,
+  .editable-rise,
+  .editable-drift {
+    animation: none !important;
+  }
+  [data-reveal] {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
   }
   .editable-site-root *,
   .editable-site-root *::before,
@@ -83,7 +160,12 @@ body {
 .editable-site-root h4,
 .editable-display {
   font-family: var(--editable-font-display);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
+}
+
+.editable-serif {
+  font-family: var(--editable-font-serif);
+  letter-spacing: -0.01em;
 }
 
 .editable-site-root p,
@@ -92,32 +174,136 @@ body {
 .editable-site-root button,
 .editable-site-root textarea,
 .editable-site-root label,
-.editable-site-root nav {
+.editable-site-root nav,
+.editable-site-root select {
   font-family: var(--editable-font-body);
 }
 
-::selection {
-  background: color-mix(in oklab, var(--slot4-accent-fill) 28%, transparent);
+/* Native <select> dropdowns: the OS-rendered option list ignores the styled
+   wrapper, so force a readable dark popup (light text on dark) site-wide.
+   `color-scheme: dark` also tells the browser to paint native controls
+   (scrollbar, focus ring, popup chrome) in dark mode. */
+.editable-site-root select {
+  color-scheme: dark;
   color: var(--slot4-page-text);
 }
+.editable-site-root option,
+.editable-site-root optgroup {
+  background-color: #161719;
+  color: #f5f5f4;
+}
+.editable-site-root option:checked,
+.editable-site-root option:hover {
+  background-color: var(--slot4-accent);
+  color: #ffffff;
+}
 
+/* Warm peach gradient for headline accents (Fleety-style). */
+.editable-accent-gradient {
+  background: linear-gradient(92deg, #ffd9c2 0%, #ff8a52 45%, #ff5e2b 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--slot4-accent-fill) 32%, transparent);
+  color: #fff;
+}
+
+::-webkit-scrollbar {
+  width: 11px;
+  height: 11px;
+}
 ::-webkit-scrollbar-track {
-  background: color-mix(in oklab, var(--slot4-page-bg) 88%, black);
+  background: var(--slot4-page-bg);
 }
-
 ::-webkit-scrollbar-thumb {
-  background: color-mix(in oklab, var(--slot4-accent) 45%, transparent);
+  background: color-mix(in oklab, var(--slot4-accent) 42%, transparent);
   border-radius: 999px;
+  border: 3px solid var(--slot4-page-bg);
 }
-
 ::-webkit-scrollbar-thumb:hover {
-  background: color-mix(in oklab, var(--slot4-accent) 68%, transparent);
+  background: color-mix(in oklab, var(--slot4-accent) 70%, transparent);
 }
 
+/* ---------------------------------------------------------------------------
+   Long-form article body typography (rendered HTML inside .article-content).
+--------------------------------------------------------------------------- */
+.article-content {
+  font-size: 1.15rem;
+  line-height: 1.85;
+  color: color-mix(in oklab, var(--slot4-page-text) 88%, transparent);
+}
+.article-content > * + * {
+  margin-top: 1.5em;
+}
+.article-content h2,
+.article-content h3 {
+  font-family: var(--editable-font-display);
+  color: var(--slot4-page-text);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  margin-top: 2.2em;
+}
 .article-content h2 {
+  font-size: 1.9rem;
+  font-weight: 600;
+}
+.article-content h3 {
+  font-size: 1.45rem;
+  font-weight: 600;
+}
+.article-content a {
+  color: var(--slot4-accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+.article-content a:hover {
+  color: #ffb38a;
+}
+.article-content blockquote {
+  border-left: 2px solid var(--slot4-accent);
+  padding-left: 1.4rem;
+  font-family: var(--editable-font-serif);
+  font-style: italic;
+  font-size: 1.35rem;
+  line-height: 1.6;
+  color: var(--slot4-page-text);
+}
+.article-content ul,
+.article-content ol {
+  padding-left: 1.4rem;
+}
+.article-content ul {
+  list-style: disc;
+}
+.article-content ol {
+  list-style: decimal;
+}
+.article-content li::marker {
   color: var(--slot4-accent);
 }
+.article-content img {
+  border-radius: 1rem;
+  border: 1px solid var(--editable-border);
+}
+.article-content code {
+  background: var(--slot4-surface-bg);
+  border: 1px solid var(--editable-border);
+  border-radius: 0.4rem;
+  padding: 0.1em 0.4em;
+  font-size: 0.9em;
+}
 
-.article-content a {
-  color: var(--slot4-accent-fill);
+/* Premium editorial drop-cap on the first paragraph of an article body. */
+.article-dropcap > p:first-of-type::first-letter {
+  float: left;
+  font-family: var(--editable-font-serif);
+  font-weight: 600;
+  font-size: 3.6em;
+  line-height: 0.72;
+  padding: 0.05em 0.12em 0 0;
+  color: var(--slot4-accent);
 }
